@@ -25,6 +25,9 @@
 	      specialArgs = {inherit inputs system;};
 	      modules = [
 		./hosts/default/configuration.nix
+		{
+			home-manager.useGlobalPkgs = true;
+		}
 	      ];
 	    };
     };
