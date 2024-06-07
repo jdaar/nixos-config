@@ -46,6 +46,6 @@
     htop
     lshw
 
-		nerdfonts
+    nerdfonts
   ];
 }

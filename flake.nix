@@ -17,8 +17,7 @@
   };
 
   outputs = { self, nixpkgs, ... }@inputs:
-    let
-      system = "x86_64-linux";
+    let system = "x86_64-linux";
     in {
       nixosConfigurations.default = nixpkgs.lib.nixosSystem {
         pkgs = import nixpkgs {
@@ -41,7 +40,7 @@
         specialArgs = { inherit inputs system; };
         modules = [
           ./hosts/wsl/configuration.nix
-					inputs.nixos-wsl.nixosModules.wsl
+          inputs.nixos-wsl.nixosModules.wsl
           { home-manager.useGlobalPkgs = true; }
         ];
       };

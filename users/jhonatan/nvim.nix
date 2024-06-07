@@ -1,5 +1,5 @@
-{ ... }: 
-let 
+{ ... }:
+let
   nvim-config = {
     enable = true;
     colorschemes.tokyonight.enable = true;
@@ -111,7 +111,4 @@ let
       };
     };
   };
-in 
-{
-  programs.nixvim = nvim-config;
-}
+in { programs.nixvim = nvim-config; }

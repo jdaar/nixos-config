@@ -1,4 +1,12 @@
-{ ... }: {
+{ pkgs, ... }:
+let
+  oh-my-bash-source = pkgs.fetchFromGitHub {
+    owner = "ohmybash";
+    repo = "oh-my-bash";
+    rev = "52a8fad4cc207c2f6d1de28788c2b2ae61756a7a";
+    hash = "sha256-4uaDiQMcPdKAXgpN5dKNfYKfHqM8MsX0bWyT9OcK0bw=";
+  };
+in {
   home.file = {
     ".config/nixpkgs/config.nix".text = "{ allowUnfree = true; }";
     ".config/zellij/config.kdl".text = ''
@@ -223,7 +231,7 @@
       *i*) ;;
       *) return ;;
       esac
-      export OSH='/home/jhonatan/.oh-my-bash'
+      export OSH='${oh-my-bash-source}'
       OSH_THEME="lambda"
       OMB_USE_SUDO=true
       completions=(
