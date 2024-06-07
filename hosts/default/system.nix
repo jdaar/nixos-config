@@ -1,5 +1,4 @@
-{ pkgs, config, ... }: 
-{
+{ pkgs, config, ... }: {
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -33,15 +32,15 @@
   system.stateVersion = "23.11";
 
   hardware.opengl = {
-  	enable = true;
-	driSupport = true;
-	driSupport32Bit = true;
+    enable = true;
+    driSupport = true;
+    driSupport32Bit = true;
   };
 
-  services.xserver.videoDrivers = ["nvidia"];
+  services.xserver.videoDrivers = [ "nvidia" ];
 
   hardware.nvidia = {
-  	modesetting.enable = true;
+    modesetting.enable = true;
     powerManagement.enable = true;
     powerManagement.finegrained = false;
     open = false;
@@ -51,7 +50,7 @@
 
   hardware.nvidia.prime = {
     sync.enable = true;
-  	intelBusId = "PCI:0:2:0";
+    intelBusId = "PCI:0:2:0";
     nvidiaBusId = "PCI:1:0:0";
   };
 
@@ -59,22 +58,22 @@
   virtualisation.waydroid.enable = true;
 
   environment.systemPackages = with pkgs; [
-	wget
-	zellij
-	appimage-run
-	fzf
-	zip
-	unzip
-	git
+    wget
+    zellij
+    appimage-run
+    fzf
+    zip
+    unzip
+    git
 
-	# GNU
-	coreutils-prefixed
-	gcc
-	gnumake
+    # GNU
+    coreutils-prefixed
+    gcc
+    gnumake
 
-	# Monitoring
-  	nvtopPackages.nvidia
-	htop
-	lshw
+    # Monitoring
+    nvtopPackages.nvidia
+    htop
+    lshw
   ];
 }

@@ -17,16 +17,15 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
-      	inherit system;
-	      config.allowUnfree = true;
-	      config.allowUnfreePredicate = (pkg: true);
+        inherit system;
+        config.allowUnfree = true;
+        config.allowUnfreePredicate = (pkg: true);
       };
     in {
-      homeConfigurations."jhonatan" = inputs.home-manager.lib.homeManagerConfiguration {
-        inherit pkgs;
-        modules = [ 
-          ./jhonatan.nix
-        ];
-      };
+      homeConfigurations."jhonatan" =
+        inputs.home-manager.lib.homeManagerConfiguration {
+          inherit pkgs;
+          modules = [ ./jhonatan.nix ];
+        };
     };
 }

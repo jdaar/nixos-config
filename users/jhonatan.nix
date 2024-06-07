@@ -1,5 +1,5 @@
 { config, pkgs, inputs, ... }:
-let 
+let
   nvim-config = {
     enable = true;
     colorschemes.gruvbox.enable = true;
@@ -21,26 +21,22 @@ let
     gnomeExtensions.pop-shell
     home-manager
   ];
-in
-{
-  imports = [
-    inputs.nixvim.homeManagerModules.nixvim
-  ];
-  
+in {
+  imports = [ inputs.nixvim.homeManagerModules.nixvim ];
+
   home.username = "jhonatan";
   home.homeDirectory = "/home/jhonatan";
 
   home.stateVersion = "24.05";
-  
+
   home.packages = packages;
 
   programs.nixvim = nvim-config;
 
   home.file = {
-    ".config/nixpkgs/config.nix".source = ./jhonatan.dotfiles/nixpkgs/config.nix;
+    ".config/nixpkgs/config.nix".source =
+      ./jhonatan.dotfiles/nixpkgs/config.nix;
   };
 
-  home.sessionVariables = {
-    EDITOR = "nvim";
-  };
+  home.sessionVariables = { EDITOR = "nvim"; };
 }
