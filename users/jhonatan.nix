@@ -57,9 +57,18 @@ let
           remap = false;
         };
       }
+      {
+        key = "<leader>e";
+        action = "<cmd>CHADopen<CR>";
+        options = {
+          silent = true;
+          remap = false;
+        };
+      }
     ];
 
     plugins = {
+      chadtree.enable = true;
       lualine.enable = true;
       bufferline.enable = true;
       gitsigns = {
