@@ -65,6 +65,7 @@
 	fzf
 	zip
 	unzip
+	git
 
 	# GNU
 	coreutils-prefixed
