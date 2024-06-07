@@ -1,6 +1,7 @@
 { inputs, ... }: {
   users.users.jhonatan.isNormalUser = true;
-  users.users.jhonatan.extraGroups = [ "networkmanager" "wheel" ];
+  users.users.jhonatan.extraGroups =
+    [ "networkmanager" "wheel" "input" "uinput" ];
 
   home-manager = {
     extraSpecialArgs = { inherit inputs; };

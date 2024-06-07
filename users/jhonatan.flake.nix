@@ -11,6 +11,7 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    xremap-flake.url = "github:xremap/nix-flake";
   };
 
   outputs = { nixpkgs, ... }@inputs:
@@ -26,6 +27,7 @@
         inputs.home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
           modules = [ ./jhonatan.nix ];
+          extraSpecialArgs = { inherit inputs; };
         };
     };
 }

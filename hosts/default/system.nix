@@ -54,6 +54,8 @@
     nvidiaBusId = "PCI:1:0:0";
   };
 
+  hardware.uinput.enable = true;
+
   nix.settings.experimental-features = "nix-command flakes";
   virtualisation.waydroid.enable = true;
 
