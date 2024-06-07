@@ -5,6 +5,11 @@
 
   home-manager = {
     extraSpecialArgs = { inherit inputs; };
-    users = { jhonatan = import ../../users/jhonatan.nix { keybinds = true; graphical = true; }; };
+    users = {
+      jhonatan = import ../../users/jhonatan.nix {
+        keybinds = true;
+        graphical = true;
+      };
+    };
   };
 }
