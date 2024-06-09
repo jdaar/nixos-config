@@ -16,8 +16,12 @@ let
       wireshark
 
       gnomeExtensions.pop-shell
+
+      nerdfonts
     ] else
-      [ ]);
+      []) ++ [
+	
+      ];
 in {
   imports = [
     inputs.nixvim.homeManagerModules.nixvim
@@ -26,14 +30,26 @@ in {
     ./jhonatan/dotfiles.nix
   ];
 
-  services.xremap = lib.mkMerge [
-    (lib.mkIf keybinds {
-      enable = true;
-      yamlConfig =
-        "      keymap:\n	- name: apps\n	  remap:\n	    Super-b:\n	      launch: [\"firefox\"]\n	    Super-t:\n	      launch: [\"alacritty\"]\n    ";
-    })
-    (lib.mkIf (!keybinds) { enable = false; })
-  ];
+  services.xremap = if keybinds then {
+		enable = true;
+		config = {
+			keymap = [
+				{
+					name = "apps";
+					remap = {
+						super-b = {
+							launch = ["firefox"];
+						};
+						super-t = {
+							launch = ["alacritty"];
+						};
+					};
+				}
+			];
+		};
+	}
+	else
+	{ enable = false; };
 
   programs.git = {
     enable = true;

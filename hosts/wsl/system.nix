@@ -45,7 +45,5 @@
     nvtopPackages.nvidia
     htop
     lshw
-
-    nerdfonts
   ];
 }

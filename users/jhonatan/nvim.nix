@@ -18,6 +18,14 @@ let
         action = ":";
       }
       {
+        key = "<leader>ca";
+        action = "<cmd>lua vim.lsp.buf.code_action()<CR>";
+        options = {
+          silent = true;
+          remap = false;
+        };
+      }
+      {
         key = "<leader>fb";
         action = "<cmd>Telescope buffers<CR>";
         options = {
@@ -34,8 +42,16 @@ let
         };
       }
       {
+        key = "<leader>f";
+        action = "<cmd>Telescope<CR>";
+        options = {
+          silent = true;
+          remap = false;
+        };
+      }
+      {
         key = "<leader>cd";
-        action = "<cmd>Telescope diagnostics<CR>";
+        action = "<cmd>TroubleToggle<CR>";
         options = {
           silent = true;
           remap = false;
@@ -68,6 +84,25 @@ let
     ];
 
     plugins = {
+      fidget.enable = true;
+      cmp = {
+				settings = {
+					autoEnableSources = true;
+					mapping = {
+						"<C-Space>" = "cmp.mapping.complete()";
+						"<Tab>" = "cmp.mapping(cmp.mapping.select_next_item())";
+						"<S-Tab>" = "cmp.mapping(cmp.mapping.select_prev_item())";
+						"<CR>" = "cmp.mapping.confirm({ select = true })";
+					};
+					sources = [
+						{ name = "nvim_lsp"; }
+						{ name = "path"; }
+						{ name = "buffer"; }
+					];
+				};
+        enable = true;
+      };
+      trouble.enable = true;
       chadtree.enable = true;
       lualine.enable = true;
       bufferline.enable = true;
@@ -77,7 +112,11 @@ let
       };
       telescope = {
         enable = true;
-        extensions = { fzf-native = { enable = true; }; };
+        extensions = { 
+					fzf-native.enable = true;
+					ui-select.enable = true;
+				};
+				defaults.wrap_results = true;
       };
       treesitter.enable = true;
       lsp = {
