@@ -61,6 +61,7 @@ in {
       	bind "h" "Left" "Up" "k" { GoToPreviousTab; }
       	bind "l" "Right" "Down" "j" { GoToNextTab; }
       	bind "n" { NewTab; SwitchToMode "Normal"; }
+      	bind "Ctrl w" { NewTab { cwd "/home/jhonatan/Workspace/code/"; }; SwitchToMode "Normal"; }
       	bind "x" { CloseTab; SwitchToMode "Normal"; }
       	bind "s" { ToggleActiveSyncTab; SwitchToMode "Normal"; }
       	bind "b" { BreakPane; SwitchToMode "Normal"; }
