@@ -1,5 +1,5 @@
 { keybinds, graphical }:
-{ config, pkgs, lib, inputs, ... }:
+{ pkgs, inputs, ... }:
 let
   packages = with pkgs;
     (if graphical then [

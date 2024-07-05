@@ -247,8 +247,6 @@ in {
       	bashmarks
       	sudo
       )
-      source "$OSH"/oh-my-bash.sh
-      eval "$(zellij setup --generate-auto-start bash)"
     '';
   };
 }

@@ -57,6 +57,14 @@ let
 				};
 			}
 			{
+				key = "<leader>q";
+				action = "<cmd>DBUI<CR>";
+				options = {
+					silent = true;
+					remap = false;
+				};
+			}
+			{
 				key = "<leader>gt";
 				action = "<cmd>Telescope lsp_type_definitions<CR>";
 				options = {
@@ -149,6 +157,15 @@ let
 		extraPlugins = with pkgs.vimPlugins; [
 			{
 				plugin = lsp_signature-nvim;
+			}
+			{
+				plugin = vim-dadbod;
+			}
+			{
+				plugin = vim-dadbod-completion;
+			}
+			{
+				plugin = vim-dadbod-ui;
 			}
 		];
 
