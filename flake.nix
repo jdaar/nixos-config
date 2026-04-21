@@ -31,6 +31,18 @@
           { home-manager.useGlobalPkgs = true; }
         ];
       };
+      nixosConfigurations.ryzenarc = nixpkgs.lib.nixosSystem {
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          config.allowUnfreePredicate = (pkg: true);
+        };
+        specialArgs = { inherit inputs system; };
+        modules = [
+          ./hosts/ryzenarc/configuration.nix
+          { home-manager.useGlobalPkgs = true; }
+        ];
+      };
       nixosConfigurations.wsl = nixpkgs.lib.nixosSystem {
         pkgs = import nixpkgs {
           inherit system;
