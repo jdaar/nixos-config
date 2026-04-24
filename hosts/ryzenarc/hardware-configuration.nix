@@ -20,13 +20,9 @@
       options = [ "fmask=0077" "dmask=0077" ];
     };
 
-  hardware.opengl = {
-    enable = true;
-    driSupport32Bit = true;
-  };
-
 	hardware.graphics = {
     enable = true;
+    enable32Bit = true;
     extraPackages = with pkgs; [
       vpl-gpu-rt
       libvdpau-va-gl
@@ -38,8 +34,10 @@
 
   hardware.uinput.enable = true;
 
-
-  swapDevices = [ ];
+  swapDevices = [ {
+		device = "/var/lib/swapfile";
+		size = 16 * 1024;
+	} ];
 
   nixpkgs.hostPlatform = lib.mkDefault "x86_64-linux";
   hardware.cpu.amd.updateMicrocode = lib.mkDefault config.hardware.enableRedistributableFirmware;

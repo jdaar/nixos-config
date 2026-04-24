@@ -17,7 +17,15 @@
     efi.efiSysMountPoint = "/boot";
   };
 
-  virtualisation.waydroid.enable = true;
+	virtualisation = {
+		waydroid.enable = true;
+		containers.enable = true;
+		podman = {
+			enable = true;
+			dockerCompat = true;
+			defaultNetwork.settings.dns_enabled = true;
+		};
+	};
 
   environment.systemPackages = with pkgs; [
     wget
@@ -34,7 +42,7 @@
     gnumake
 
     # Monitoring
-    nvtopPackages.nvidia
+    nvtopPackages.intel
     htop
     lshw
   ];
@@ -60,9 +68,6 @@
 
   services.xserver.enable = true;
 
-  services.xserver.displayManager.gdm.enable = true;
-  services.xserver.desktopManager.gnome.enable = true;
-
   services.xserver.xkb = {
     layout = "es";
     variant = "nodeadkeys";
@@ -81,6 +86,8 @@
   };
 
   services.openssh.enable = true;
+	
+	services.onedrive.enable = true;
 
   networking.firewall.allowedTCPPorts = [  ];
   networking.firewall.allowedUDPPorts = [  ];

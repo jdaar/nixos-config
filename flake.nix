@@ -16,7 +16,7 @@
     xremap-flake.url = "github:xremap/nix-flake";
   };
 
-  outputs = { self, nixpkgs, ... }@inputs:
+  outputs = { nixpkgs, ... }@inputs:
     let system = "x86_64-linux";
     in {
       nixosConfigurations.default = nixpkgs.lib.nixosSystem {

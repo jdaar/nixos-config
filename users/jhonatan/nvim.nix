@@ -170,6 +170,7 @@ let
 		];
 
 		plugins = {
+			web-devicons.enable = true;
 			fidget.enable = true;
 			statuscol.enable = true;
 			twilight.enable = true;
@@ -206,11 +207,13 @@ let
 				};
 				settings.defaults.wrap_results = true;
 			};
-			treesitter.enable = true;
+			treesitter = {
+				enable = true;
+			};
 			lsp = {
 				enable = true;
 				servers = {
-					tsserver.enable = true; # TS/JS
+					ts_ls.enable = true; # TS/JS
 					cssls.enable = true; # CSS
 					tailwindcss.enable = true; # TailwindCSS
 					html.enable = true; # HTML
@@ -223,7 +226,7 @@ let
 					dockerls.enable = true; # Docker
 					bashls.enable = true; # Bash
 					clangd.enable = true; # C/C++
-					csharp-ls.enable = true; # C#
+					csharp_ls.enable = true; # C#
 				};
 			};
 			nvim-autopairs.enable = true;
