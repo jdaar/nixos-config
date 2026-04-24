@@ -1,14 +1,12 @@
-{ pkgs, config, ... }: {
-  hardware.opengl = {
-    enable = true;
-    driSupport = true;
-    driSupport32Bit = true;
-  };
+{ pkgs, ... }: {
+  nix.settings.experimental-features = "nix-command flakes";
 
+	# use refind-install instead if mouse support is needed
   boot.loader = {
     grub.enable = false;
     refind = {
       enable = true;
+      maxGenerations = 1;
       extraConfig = ''
         timeout 15
         default_selection 2
@@ -16,11 +14,9 @@
       '';
     };
     efi.canTouchEfiVariables = true;
+    efi.efiSysMountPoint = "/boot";
   };
 
-  hardware.uinput.enable = true;
-
-  nix.settings.experimental-features = "nix-command flakes";
   virtualisation.waydroid.enable = true;
 
   environment.systemPackages = with pkgs; [
@@ -43,8 +39,7 @@
     lshw
   ];
 
-  networking.hostName = "ryzen-3400g-intel-arc";
-  networking.wireless.enable = true;  
+  networking.hostName = "ryzenarc"; 
   networking.networkmanager.enable = true;
 
   time.timeZone = "America/Bogota";
@@ -77,7 +72,6 @@
 
   services.printing.enable = true;
 
-  services.pulseaudio.enable = false;
   security.rtkit.enable = true;
   services.pipewire = {
     enable = true;
@@ -85,8 +79,6 @@
     alsa.support32Bit = true;
     pulse.enable = true;
   };
-
-  nixpkgs.config.allowUnfree = true;
 
   services.openssh.enable = true;
 

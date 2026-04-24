@@ -5,7 +5,7 @@ let
     (if graphical then [
       firefox
       alacritty
-      bitwarden
+      bitwarden-desktop
       spotify
 
       lutris-unwrapped
@@ -16,8 +16,8 @@ let
       wireshark
 
       gnomeExtensions.pop-shell
-
-      nerdfonts
+ 
+			nerd-fonts.go-mono
     ] else
       []) ++ [
 	

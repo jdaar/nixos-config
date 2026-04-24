@@ -217,14 +217,13 @@ let
 					svelte.enable = false; # Svelte
 					nixd.enable = true; # Nix
 					jsonls.enable = true; # Json
-          vuels.enable = false; # Vue
-          pyright.enable = true; # Python
-          marksman.enable = true; # Markdown
-          nil_ls.enable = true; # Nix
-          dockerls.enable = true; # Docker
-          bashls.enable = true; # Bash
-          clangd.enable = true; # C/C++
-          csharp-ls.enable = true; # C#
+					pyright.enable = true; # Python
+					marksman.enable = true; # Markdown
+					nil_ls.enable = true; # Nix
+					dockerls.enable = true; # Docker
+					bashls.enable = true; # Bash
+					clangd.enable = true; # C/C++
+					csharp-ls.enable = true; # C#
 				};
 			};
 			nvim-autopairs.enable = true;
