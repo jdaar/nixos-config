@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 let
   oh-my-bash-source = pkgs.fetchFromGitHub {
     owner = "ohmybash";
@@ -1430,6 +1430,10 @@ prefer_egl = false
       	bashmarks
       	sudo
       )
+			export HOST_IP=$(ip route show | grep -i default | awk '{ print $3 }')
+			export EDITOR=nvim
+			export NPM_CONFIG_PREFIX="${config.home.homeDirectory}/.npm-global"
+			export PATH="$PATH:${config.home.homeDirectory}/.npm-global"
     '';
   };
 }

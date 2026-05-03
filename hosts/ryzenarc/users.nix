@@ -9,6 +9,7 @@
       jhonatan = import ../../users/jhonatan.nix {
         keybinds = true;
         graphical = true;
+				isServer = false;
       };
     };
   };

@@ -1,10 +1,10 @@
-{ keybinds, graphical }:
-{ pkgs, inputs, ... }:
+{ keybinds, graphical, isServer }:
+{ pkgs, config, inputs, ... }:
 let
   packages =
     with pkgs;
     (
-      if graphical then
+      if graphical && !isServer then
         [
           firefox
           alacritty
@@ -34,6 +34,24 @@ let
         ]
       else
         [ ]
+    ) ++
+    (
+      if graphical && isServer then
+        [
+          firefox
+          alacritty
+          wireshark
+          gnomeExtensions.pop-shell
+          copyq
+
+          nerd-fonts.go-mono
+
+          podman
+          rclone-ui
+          rclone-browser
+        ]
+      else
+        [ ]
     )
     ++ [
       claude-code
@@ -41,9 +59,11 @@ let
       podman-tui
       rclone
       syncthing
-			lua51Packages.tree-sitter-cli
-			ripgrep
-			fd
+      lua51Packages.tree-sitter-cli
+      ripgrep
+			nodejs_24
+			corepack_24
+      fd
     ];
 in
 {

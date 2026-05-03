@@ -14,6 +14,7 @@
     nixos-wsl.url = "github:nix-community/NixOS-WSL";
     nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
     xremap-flake.url = "github:xremap/nix-flake";
+    llm-agents.url = "github:numtide/llm-agents.nix";
   };
 
   outputs = { nixpkgs, ... }@inputs:
@@ -40,6 +41,18 @@
         specialArgs = { inherit inputs system; };
         modules = [
           ./hosts/ryzenarc/configuration.nix
+          { home-manager.useGlobalPkgs = true; }
+        ];
+      };
+      nixosConfigurations.server = nixpkgs.lib.nixosSystem {
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          config.allowUnfreePredicate = (pkg: true);
+        };
+        specialArgs = { inherit inputs system; };
+        modules = [
+          ./hosts/server/configuration.nix
           { home-manager.useGlobalPkgs = true; }
         ];
       };

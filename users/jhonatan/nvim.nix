@@ -33,6 +33,17 @@ let
 					'';
 				};
 			}
+			{
+				event = "FileType";
+				pattern = [ "sql" "mysql" "plsql" ];
+				callback = {
+					__raw = ''
+						function()
+							require("cmp").setup.buffer({ sources = {{ name = "vim-dadbod-completion" }} })
+						end
+					'';
+				};
+			}
 		];
 
 		keymaps = [
@@ -122,7 +133,7 @@ let
 			}
 			{
 				key = "<leader>cd";
-				action = "<cmd>TroubleToggle<CR>";
+				action = "<cmd>Trouble diagnostics toggle<CR>";
 				options = {
 					silent = true;
 					remap = false;
@@ -155,18 +166,10 @@ let
 		];
 
 		extraPlugins = with pkgs.vimPlugins; [
-			{
-				plugin = lsp_signature-nvim;
-			}
-			{
-				plugin = vim-dadbod;
-			}
-			{
-				plugin = vim-dadbod-completion;
-			}
-			{
-				plugin = vim-dadbod-ui;
-			}
+			lsp_signature-nvim
+			vim-dadbod
+			vim-dadbod-ui
+			vim-dadbod-completion
 		];
 
 		plugins = {
@@ -179,8 +182,8 @@ let
 					autoEnableSources = true;
 					mapping = {
 						"<C-Space>" = "cmp.mapping.complete()";
-						"<Tab>" = "cmp.mapping(cmp.mapping.select_next_item())";
-						"<S-Tab>" = "cmp.mapping(cmp.mapping.select_prev_item())";
+						"<Tab>" = "cmp.mapping.select_next_item()";
+						"<S-Tab>" = "cmp.mapping.select_prev_item()";
 						"<CR>" = "cmp.mapping.confirm({ select = true })";
 					};
 					sources = [
@@ -215,25 +218,22 @@ let
 				servers = {
 					ts_ls.enable = true; # TS/JS
 					cssls.enable = true; # CSS
+					svelte.enable = false;
 					tailwindcss.enable = true; # TailwindCSS
 					html.enable = true; # HTML
-					svelte.enable = false; # Svelte
 					nixd.enable = true; # Nix
 					jsonls.enable = true; # Json
 					pyright.enable = true; # Python
 					marksman.enable = true; # Markdown
-					nil_ls.enable = true; # Nix
 					dockerls.enable = true; # Docker
 					bashls.enable = true; # Bash
 					clangd.enable = true; # C/C++
-					csharp_ls.enable = true; # C#
 				};
 			};
 			nvim-autopairs.enable = true;
 			toggleterm = {
 				enable = true;
 				settings = {
-					hide_numbers = false;
 					autochdir = true;
 					close_on_exit = true;
 					direction = "horizontal";

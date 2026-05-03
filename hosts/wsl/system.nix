@@ -1,4 +1,4 @@
-{ pkgs, ... }: {
+{ pkgs, inputs, ... }: {
   boot.loader.systemd-boot.enable = false;
   boot.loader.efi.canTouchEfiVariables = true;
 
@@ -27,7 +27,7 @@
 
   nix.settings.experimental-features = "nix-command flakes";
 
-  environment.systemPackages = with pkgs; [
+  environment.systemPackages = (with pkgs; [
     wget
     zellij
     appimage-run
@@ -42,8 +42,10 @@
     gnumake
 
     # Monitoring
-    nvtopPackages.nvidia
     htop
     lshw
-  ];
+  ]) ++ (with inputs.llm-agents.packages.${pkgs.stdenv.hostPlatform.system}; [
+    pi
+		opencode
+  ]);
 }
