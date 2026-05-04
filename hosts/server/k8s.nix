@@ -72,6 +72,20 @@ let
         }
   '';
 
+  keycloakPvcYaml = pkgs.writeText "keycloak-pvc.yaml" ''
+    apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: keycloak-data
+      namespace: keycloak
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+  '';
+
   keycloakDeploymentYaml = pkgs.writeText "keycloak-deployment.yaml" ''
     apiVersion: apps/v1
     kind: Deployment
@@ -91,7 +105,7 @@ let
           containers:
             - name: keycloak
               image: quay.io/keycloak/keycloak:26.0
-              args: ["start-dev", "--import-realm", "--features=token-exchange"]
+              args: ["start", "--import-realm", "--features=token-exchange"]
               env:
                 - name: KC_HTTP_RELATIVE_PATH
                   value: /keycloak
@@ -101,8 +115,22 @@ let
                   value: admin
                 - name: KC_HEALTH_ENABLED
                   value: "true"
-                - name: KC_HTTP_PORT
-                  value: "8080"
+                - name: KC_HTTP_ENABLED
+                  value: "true"
+                - name: KC_HOSTNAME
+                  value: 152.53.135.19
+                - name: KC_HOSTNAME_PATH
+                  value: keycloak
+                - name: KC_PROXY_HEADERS
+                  value: xforwarded
+                - name: KC_DB
+                  value: postgres
+                - name: KC_DB_URL
+                  value: jdbc:postgresql://keycloak-db/keycloak
+                - name: KC_DB_USERNAME
+                  value: keycloak
+                - name: KC_DB_PASSWORD
+                  value: keycloak
               ports:
                 - containerPort: 8080
                 - containerPort: 9000
@@ -125,6 +153,57 @@ let
             - name: realm-import
               configMap:
                 name: keycloak-realm
+  '';
+
+  keycloakDbDeploymentYaml = pkgs.writeText "keycloak-db-deployment.yaml" ''
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: keycloak-db
+      namespace: keycloak
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: keycloak-db
+      template:
+        metadata:
+          labels:
+            app: keycloak-db
+        spec:
+          containers:
+            - name: postgres
+              image: postgres:16
+              env:
+                - name: POSTGRES_DB
+                  value: keycloak
+                - name: POSTGRES_USER
+                  value: keycloak
+                - name: POSTGRES_PASSWORD
+                  value: keycloak
+              ports:
+                - containerPort: 5432
+              volumeMounts:
+                - name: data
+                  mountPath: /var/lib/postgresql/data
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: keycloak-data
+  '';
+
+  keycloakDbServiceYaml = pkgs.writeText "keycloak-db-service.yaml" ''
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: keycloak-db
+      namespace: keycloak
+    spec:
+      ports:
+        - port: 5432
+          targetPort: 5432
+      selector:
+        app: keycloak-db
   '';
 
   keycloakServiceYaml = pkgs.writeText "keycloak-service.yaml" ''
@@ -288,6 +367,9 @@ in
     "d ${manifestDir} 0755 root root -"
     "L+ ${manifestDir}/keycloak-ns.yaml - - - - ${keycloakNsYaml}"
     "L+ ${manifestDir}/keycloak-realm.yaml - - - - ${keycloakRealmYaml}"
+    "L+ ${manifestDir}/keycloak-pvc.yaml - - - - ${keycloakPvcYaml}"
+    "L+ ${manifestDir}/keycloak-db-deployment.yaml - - - - ${keycloakDbDeploymentYaml}"
+    "L+ ${manifestDir}/keycloak-db-service.yaml - - - - ${keycloakDbServiceYaml}"
     "L+ ${manifestDir}/keycloak-deployment.yaml - - - - ${keycloakDeploymentYaml}"
     "L+ ${manifestDir}/keycloak-service.yaml - - - - ${keycloakServiceYaml}"
     "L+ ${manifestDir}/keycloak-ingress.yaml - - - - ${keycloakIngressYaml}"
