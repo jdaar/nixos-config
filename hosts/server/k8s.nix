@@ -14,6 +14,29 @@ let
       name: headlamp
   '';
 
+  headlampAdminYaml = pkgs.writeText "headlamp-admin.yaml" ''
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: headlamp-admin
+      namespace: kube-system
+  '';
+
+  headlampAdminCrbYaml = pkgs.writeText "headlamp-admin-crb.yaml" ''
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: headlamp-admin-cluster-admin
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+      - kind: ServiceAccount
+        name: headlamp-admin
+        namespace: kube-system
+  '';
+
   headlampYaml = pkgs.writeText "headlamp.yaml" ''
     apiVersion: helm.cattle.io/v1
     kind: HelmChart
@@ -82,6 +105,8 @@ in
     "d ${manifestDir} 0755 root root -"
     "L+ ${manifestDir}/namespace.yaml - - - - ${namespaceYaml}"
     "L+ ${manifestDir}/headlamp-ns.yaml - - - - ${headlampNsYaml}"
+    "L+ ${manifestDir}/headlamp-admin.yaml - - - - ${headlampAdminYaml}"
+    "L+ ${manifestDir}/headlamp-admin-crb.yaml - - - - ${headlampAdminCrbYaml}"
     "L+ ${manifestDir}/headlamp.yaml - - - - ${headlampYaml}"
     "L+ ${manifestDir}/contour-gateway-provisioner.yaml - - - - ${contourProvisionerYaml}"
     "L+ ${manifestDir}/gateway-class.yaml - - - - ${gatewayClassYaml}"
