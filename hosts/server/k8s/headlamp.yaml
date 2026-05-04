@@ -1,0 +1,13 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: headlamp
+  namespace: kube-system
+spec:
+  chart: headlamp
+  repo: https://kubernetes.github.io/headlamp
+  targetNamespace: projectcontour
+  valuesContent: |-
+    service:
+      type: NodePort
+      nodePort: 30000
