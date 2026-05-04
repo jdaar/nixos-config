@@ -56,6 +56,8 @@ let
       name: headlamp
       namespace: headlamp
     spec:
+      hostnames:
+        - "152.53.135.19"
       parentRefs:
         - name: contour
           namespace: projectcontour
