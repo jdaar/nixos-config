@@ -1,12 +1,5 @@
 { pkgs, ... }:
 let
-  namespaceYaml = pkgs.writeText "namespace.yaml" ''
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      name: projectcontour
-  '';
-
   headlampNsYaml = pkgs.writeText "headlamp-ns.yaml" ''
     apiVersion: v1
     kind: Namespace
@@ -49,66 +42,26 @@ let
       targetNamespace: headlamp
   '';
 
-  headlampRouteYaml = pkgs.writeText "headlamp-route.yaml" ''
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: HTTPRoute
+  headlampIngressYaml = pkgs.writeText "headlamp-ingress.yaml" ''
+    apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
     metadata:
       name: headlamp
       namespace: headlamp
     spec:
-      parentRefs:
-        - name: contour
-          namespace: projectcontour
-          sectionName: https
-      rules:
-        - backendRefs:
+      entryPoints:
+        - websecure
+      routes:
+        - match: PathPrefix(`/`)
+          kind: Rule
+          services:
             - name: headlamp
               port: 80
-  '';
-
-  gatewayClassYaml = pkgs.writeText "gateway-class.yaml" ''
-    kind: GatewayClass
-    apiVersion: gateway.networking.k8s.io/v1
-    metadata:
-      name: contour
-    spec:
-      controllerName: projectcontour.io/gateway-controller
+      tls:
+        secretName: headlamp-tls
   '';
 
   tlsSecretYaml = ./.tls/secret.yaml;
-
-  gatewayYaml = pkgs.writeText "gateway.yaml" ''
-    kind: Gateway
-    apiVersion: gateway.networking.k8s.io/v1
-    metadata:
-      name: contour
-      namespace: projectcontour
-    spec:
-      gatewayClassName: contour
-      listeners:
-        - name: http
-          protocol: HTTP
-          port: 80
-          allowedRoutes:
-            namespaces:
-              from: All
-        - name: https
-          protocol: HTTPS
-          port: 443
-          tls:
-            mode: Terminate
-            certificateRefs:
-              - name: contour-tls
-                namespace: projectcontour
-          allowedRoutes:
-            namespaces:
-              from: All
-  '';
-
-  contourProvisionerYaml = pkgs.fetchurl {
-    url = "https://projectcontour.io/quickstart/contour-gateway-provisioner.yaml";
-    hash = "sha256-/re7fE+RxC9Urzn83u2zQoHNZA172ecAOOvIC9P/jGA=";
-  };
 
   manifestDir = "/var/lib/rancher/k3s/server/manifests";
 in
@@ -116,20 +69,15 @@ in
   services.k3s = {
     enable = true;
     role = "server";
-    extraFlags = "--disable=traefik";
   };
 
   systemd.tmpfiles.rules = [
     "d ${manifestDir} 0755 root root -"
-    "L+ ${manifestDir}/namespace.yaml - - - - ${namespaceYaml}"
     "L+ ${manifestDir}/headlamp-ns.yaml - - - - ${headlampNsYaml}"
     "L+ ${manifestDir}/headlamp-admin.yaml - - - - ${headlampAdminYaml}"
     "L+ ${manifestDir}/headlamp-admin-crb.yaml - - - - ${headlampAdminCrbYaml}"
     "L+ ${manifestDir}/headlamp.yaml - - - - ${headlampYaml}"
-    "L+ ${manifestDir}/headlamp-route.yaml - - - - ${headlampRouteYaml}"
-    "L+ ${manifestDir}/contour-gateway-provisioner.yaml - - - - ${contourProvisionerYaml}"
-    "L+ ${manifestDir}/gateway-class.yaml - - - - ${gatewayClassYaml}"
-    "L+ ${manifestDir}/gateway.yaml - - - - ${gatewayYaml}"
+    "L+ ${manifestDir}/headlamp-ingress.yaml - - - - ${headlampIngressYaml}"
     "L+ ${manifestDir}/secret.yaml - - - - ${tlsSecretYaml}"
   ];
 
@@ -149,6 +97,5 @@ in
     kubernetes-helm
     kubectl
     k3s
-    contour
   ];
 }
