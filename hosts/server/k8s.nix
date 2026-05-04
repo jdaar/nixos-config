@@ -371,6 +371,7 @@ let
             clientSecret: headlamp-client-secret
             issuerURL: https://152.53.135.19/keycloak/realms/headlamp
             scopes: openid profile email
+            usePKCE: true
         env:
           - name: SSL_CERT_FILE
             value: /etc/ssl/certs/ca.crt
