@@ -1,12 +1,12 @@
 { pkgs, ... }: {
   nix.settings.experimental-features = "nix-command flakes";
 
-	# use refind-install instead if mouse support is needed
-  boot = {
+	boot = {
 		loader = {
-			systemd-boot.enable = true;
-			efi.canTouchEfiVariables = false;
-			efi.efiSysMountPoint = "/boot";
+			grub = {
+				enable = true;
+				devices = [ "/dev/sda" ];
+			};
 		};
 		kernelPackages = pkgs.linuxPackages_latest;
 	};
