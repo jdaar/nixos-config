@@ -1,18 +1,56 @@
-{ pkgs, lib, ... }:
-let
-  manifestsDir = "rancher/k3s/server/manifests";
-in
+{ pkgs, ... }:
 {
   services.k3s = {
     enable = true;
     role = "server";
     extraFlags = "--disable=traefik";
+    manifests = {
+      namespace = {
+        enable = true;
+        content = {
+          apiVersion = "v1";
+          kind = "Namespace";
+          metadata = {
+            name = "projectcontour";
+          };
+        };
+      };
+      contour = {
+        enable = true;
+        content = {
+          apiVersion = "helm.cattle.io/v1";
+          kind = "HelmChart";
+          metadata = {
+            name = "contour";
+            namespace = "kube-system";
+          };
+          spec = {
+            chart = "contour";
+            repo = "https://charts.bitnami.com/bitnami";
+            targetNamespace = "projectcontour";
+            valuesContent = "contour:\n  ingressController:\n    enabled: true\n";
+          };
+        };
+      };
+      headlamp = {
+        enable = true;
+        content = {
+          apiVersion = "helm.cattle.io/v1";
+          kind = "HelmChart";
+          metadata = {
+            name = "headlamp";
+            namespace = "kube-system";
+          };
+          spec = {
+            chart = "headlamp";
+            repo = "https://kubernetes.github.io/headlamp";
+            targetNamespace = "projectcontour";
+            valuesContent = "service:\n  type: NodePort\n  nodePort: 30000\n";
+          };
+        };
+      };
+    };
   };
-
-  environment.etc = lib.mapAttrs' (name: _: {
-    name = "${manifestsDir}/${name}";
-    value = { source = ./k8s/${name}; };
-  }) (builtins.readDir ./k8s);
 
   networking.firewall = {
     allowedTCPPorts = [
