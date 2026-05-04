@@ -239,6 +239,32 @@ let
         secretName: keycloak-tls
   '';
 
+  rootCaCertYaml = pkgs.writeText "root-ca-cert.yaml" ''
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: root-ca
+      namespace: cert-manager
+    spec:
+      isCA: true
+      commonName: headlamp-root-ca
+      secretName: root-ca-tls
+      duration: 87600h
+      issuerRef:
+        name: selfsigned
+        kind: ClusterIssuer
+  '';
+
+  caIssuerYaml = pkgs.writeText "ca-issuer.yaml" ''
+    apiVersion: cert-manager.io/v1
+    kind: ClusterIssuer
+    metadata:
+      name: ca-issuer
+    spec:
+      ca:
+        secretName: root-ca-tls
+  '';
+
   keycloakCertYaml = pkgs.writeText "keycloak-cert.yaml" ''
     apiVersion: cert-manager.io/v1
     kind: Certificate
@@ -250,7 +276,7 @@ let
       duration: 2160h
       renewBefore: 360h
       issuerRef:
-        name: selfsigned
+        name: ca-issuer
         kind: ClusterIssuer
       ipAddresses:
         - 152.53.135.19
@@ -345,6 +371,21 @@ let
             clientSecret: headlamp-client-secret
             issuerURL: http://keycloak.keycloak:8080/keycloak/realms/headlamp
             scopes: openid profile email
+        env:
+          - name: SSL_CERT_FILE
+            value: /etc/ssl/certs/ca.crt
+        volumeMounts:
+          - name: ca-cert
+            mountPath: /etc/ssl/certs/ca.crt
+            subPath: ca.crt
+            readOnly: true
+        volumes:
+          - name: ca-cert
+            secret:
+              secretName: headlamp-tls
+              items:
+                - key: ca.crt
+                  path: ca.crt
   '';
 
   headlampCertYaml = pkgs.writeText "headlamp-cert.yaml" ''
@@ -358,7 +399,7 @@ let
       duration: 2160h
       renewBefore: 360h
       issuerRef:
-        name: selfsigned
+        name: ca-issuer
         kind: ClusterIssuer
       ipAddresses:
         - 152.53.135.19
@@ -405,6 +446,8 @@ in
     "L+ ${manifestDir}/cert-manager-ns.yaml - - - - ${certManagerNsYaml}"
     "L+ ${manifestDir}/cert-manager.yaml - - - - ${certManagerYaml}"
     "L+ ${manifestDir}/cluster-issuer.yaml - - - - ${clusterIssuerYaml}"
+    "L+ ${manifestDir}/root-ca-cert.yaml - - - - ${rootCaCertYaml}"
+    "L+ ${manifestDir}/ca-issuer.yaml - - - - ${caIssuerYaml}"
     "L+ ${manifestDir}/headlamp-ns.yaml - - - - ${headlampNsYaml}"
     "L+ ${manifestDir}/headlamp-admin.yaml - - - - ${headlampAdminYaml}"
     "L+ ${manifestDir}/headlamp-admin-crb.yaml - - - - ${headlampAdminCrbYaml}"
