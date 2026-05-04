@@ -373,9 +373,8 @@ let
             scopes: openid profile email
             usePKCE: true
             callbackURL: https://152.53.135.19/oidc-callback
-        env:
-          - name: SSL_CERT_FILE
-            value: /etc/ssl/certs/ca.crt
+        extraArgs:
+          - -oidc-ca-file=/etc/ssl/certs/ca.crt
         volumeMounts:
           - name: ca-cert
             mountPath: /etc/ssl/certs/ca.crt
