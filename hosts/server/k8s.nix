@@ -444,6 +444,9 @@ in
       "--kube-apiserver-arg=--oidc-username-claim=preferred_username"
       "--kube-apiserver-arg=--oidc-groups-claim=realm_access.roles"
     ];
+    extraEnvironment = {
+      SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+    };
   };
 
   systemd.tmpfiles.rules = [
