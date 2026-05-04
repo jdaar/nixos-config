@@ -59,7 +59,6 @@ let
       parentRefs:
         - name: contour
           namespace: projectcontour
-          sectionName: http
       rules:
         - backendRefs:
             - name: headlamp
@@ -74,6 +73,8 @@ let
     spec:
       controllerName: projectcontour.io/gateway-controller
   '';
+
+  tlsSecretYaml = ./.tls/secret.yaml;
 
   gatewayYaml = pkgs.writeText "gateway.yaml" ''
     kind: Gateway
@@ -94,7 +95,10 @@ let
           protocol: HTTPS
           port: 443
           tls:
-            mode: Passthrough
+            mode: Terminate
+            certificateRefs:
+              - name: contour-tls
+                namespace: projectcontour
           allowedRoutes:
             namespaces:
               from: All
@@ -125,6 +129,7 @@ in
     "L+ ${manifestDir}/contour-gateway-provisioner.yaml - - - - ${contourProvisionerYaml}"
     "L+ ${manifestDir}/gateway-class.yaml - - - - ${gatewayClassYaml}"
     "L+ ${manifestDir}/gateway.yaml - - - - ${gatewayYaml}"
+    "L+ ${manifestDir}/secret.yaml - - - - ${tlsSecretYaml}"
   ];
 
   networking.firewall = {
