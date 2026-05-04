@@ -47,11 +47,23 @@ let
       chart: headlamp
       repo: https://kubernetes-sigs.github.io/headlamp
       targetNamespace: headlamp
-      valuesContent: |
-        service:
-          type: NodePort
-          nodePort: 30000
   '';
+
+  headlampRouteYaml = pkgs.writeText "headlamp-route.yaml" ''
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: HTTPRoute
+    metadata:
+      name: headlamp
+      namespace: headlamp
+    spec:
+      parentRefs:
+        - name: contour
+          namespace: projectcontour
+          sectionName: http
+      rules:
+        - backendRefs:
+            - name: headlamp
+              port: 80
 
   gatewayClassYaml = pkgs.writeText "gateway-class.yaml" ''
     kind: GatewayClass
@@ -108,6 +120,7 @@ in
     "L+ ${manifestDir}/headlamp-admin.yaml - - - - ${headlampAdminYaml}"
     "L+ ${manifestDir}/headlamp-admin-crb.yaml - - - - ${headlampAdminCrbYaml}"
     "L+ ${manifestDir}/headlamp.yaml - - - - ${headlampYaml}"
+    "L+ ${manifestDir}/headlamp-route.yaml - - - - ${headlampRouteYaml}"
     "L+ ${manifestDir}/contour-gateway-provisioner.yaml - - - - ${contourProvisionerYaml}"
     "L+ ${manifestDir}/gateway-class.yaml - - - - ${gatewayClassYaml}"
     "L+ ${manifestDir}/gateway.yaml - - - - ${gatewayYaml}"
@@ -121,7 +134,6 @@ in
       2380
       80
       443
-      30000
     ];
     allowedUDPPorts = [ 8472 ];
   };
