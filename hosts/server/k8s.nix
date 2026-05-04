@@ -33,7 +33,7 @@ let
               "standardFlowEnabled": true,
               "directAccessGrantsEnabled": true,
               "redirectUris": [
-                "https://152.53.135.19/oidc-callback"
+                "https://152.53.135.19/*"
               ],
               "webOrigins": [
                 "https://152.53.135.19"
