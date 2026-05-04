@@ -105,16 +105,17 @@ let
                   value: "8080"
               ports:
                 - containerPort: 8080
+                - containerPort: 9000
               readinessProbe:
                 httpGet:
-                  path: /keycloak/health/ready
-                  port: 8080
+                  path: /health/ready
+                  port: 9000
                 initialDelaySeconds: 30
                 periodSeconds: 10
               livenessProbe:
                 httpGet:
-                  path: /keycloak/health
-                  port: 8080
+                  path: /health
+                  port: 9000
                 initialDelaySeconds: 30
                 periodSeconds: 10
               volumeMounts:
