@@ -1,4 +1,4 @@
-{ ... }: {
+{ pkgs, ... }: {
   services.displayManager.gdm.enable = true;
   services.desktopManager.gnome.enable = true;
 
@@ -16,10 +16,14 @@
   services.openssh.enable = true;
 	services.onedrive.enable = false;
 
-  networking.firewall.allowedTCPPorts = [  ];
-  networking.firewall.allowedUDPPorts = [  ];
+  networking.firewall.allowedTCPPorts = [ 3389 ];
+  networking.firewall.allowedUDPPorts = [ 3389 ];
   networking.firewall.enable = true;
 
+  services.xrdp = {
+    enable = true;
+    defaultWindowManager = "${pkgs.gnome-session}/bin/gnome-session";
+  };
   services.libinput.enable = true;
   programs.zsh.enable = true;
 }

@@ -5,7 +5,6 @@
 		loader = {
 			grub = {
 				enable = true;
-				devices = [ "/dev/sda" ];
 			};
 		};
 		kernelPackages = pkgs.linuxPackages_latest;
