@@ -1434,6 +1434,7 @@ prefer_egl = false
 			export EDITOR=nvim
 			export NPM_CONFIG_PREFIX="${config.home.homeDirectory}/.npm-global"
 			export PATH="$PATH:${config.home.homeDirectory}/.npm-global"
+			export KUBECONFIG="/etc/rancher/k3s/k3s.yaml"
     '';
   };
 }
