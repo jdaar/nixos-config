@@ -236,10 +236,25 @@ let
             - name: keycloak
               port: 8080
       tls:
-        secretName: headlamp-tls
+        secretName: keycloak-tls
   '';
 
-  certManagerNsYaml = pkgs.writeText "cert-manager-ns.yaml" ''
+  keycloakCertYaml = pkgs.writeText "keycloak-cert.yaml" ''
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: keycloak
+      namespace: keycloak
+    spec:
+      secretName: keycloak-tls
+      duration: 2160h
+      renewBefore: 360h
+      issuerRef:
+        name: selfsigned
+        kind: ClusterIssuer
+      ipAddresses:
+        - 152.53.135.19
+  ''; = pkgs.writeText "cert-manager-ns.yaml" ''
     apiVersion: v1
     kind: Namespace
     metadata:
@@ -373,6 +388,7 @@ in
     "L+ ${manifestDir}/keycloak-deployment.yaml - - - - ${keycloakDeploymentYaml}"
     "L+ ${manifestDir}/keycloak-service.yaml - - - - ${keycloakServiceYaml}"
     "L+ ${manifestDir}/keycloak-ingress.yaml - - - - ${keycloakIngressYaml}"
+    "L+ ${manifestDir}/keycloak-cert.yaml - - - - ${keycloakCertYaml}"
     "L+ ${manifestDir}/cert-manager-ns.yaml - - - - ${certManagerNsYaml}"
     "L+ ${manifestDir}/cert-manager.yaml - - - - ${certManagerYaml}"
     "L+ ${manifestDir}/cluster-issuer.yaml - - - - ${clusterIssuerYaml}"
