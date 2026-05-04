@@ -428,27 +428,11 @@ let
   manifestDir = "/var/lib/rancher/k3s/server/manifests";
 in
 {
-  environment.etc."k3s-oidc-ca.crt".text = ''
-    -----BEGIN CERTIFICATE-----
-    MIIDBjCCAe6gAwIBAgIUYrDEOI0adqmWkqeTGApXSY+1jUswDQYJKoZIhvcNAQEL
-    BQAwGzEZMBcGA1UEAxMQaGVhZGxhbXAtcm9vdC1jYTAeFw0yNjA1MDQyMjMzMDla
-    Fw0zNjA1MDEyMjMzMDlaMBsxGTAXBgNVBAMTEGhlYWRsYW1wLXJvb3QtY2EwggEi
-    MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDCbZ0iSvjHWqwyKLbvzfd4/EsD
-    QS8dJ5MgFbt/PbPmHqqyB/iJWqbTMK3WR02qScVX6toCLtWDkwgtEZvLy0e7gWzh
-    P9nh8mfPRZU+WRy2anOW9/rAof8+PxCiCGOLfnmisFBTxhKD6fvNSHuXAxjQwncf
-    XFHKw+eAgyEUUgk1sUzZgSlGXyD9GlocutgPbUaKQlVq37eaXeLkJ1k2cyaZ1mSK
-    iLfCEkcAoaNeR3ynDeX2jUBiJ1E0PvntbwLhOXROXp3lieraztxKfW/wcdbeDE0f
-    rekTKEZ36OZMKzT0gBynrIz1oMFx9hNfqv4/ovIY1tvSpauS1cd3VfN0XHGxAgMB
-    AAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW
-    BBQVBsbwXSPuKtVwDyBa88Fni3pMYjANBgkqhkiG9w0BAQsFAAOCAQEArBYHV8Y0
-    9HGV/gQDJnoseB0hg0IPqMhvLNzLJBytTkY3qdlJ4Bnb0teapEENaW8YOOnKFayh
-    xFt0mt2kEx0I3r7gzcejpVKNQY1v6JRDKdiGo2yUAWPNNqMja2DBM6j4yHM0J3Aq
-    cvUYQi0vQBaxIIyIS7nIVu1rlNpnTmaLOBiidtJBH5sam64bfhHrGggeaNEZUMAD
-    PbKq5v5Rh3vXASMEi2wqvVioPEEPpju6Wne08kDmlLrh1Suz4XzvOCiKPhW9rpIL
-    i5h+XhrVLdttLutN65bjqbwk6w5AzVlY/uUxHwvuTHiQ1PmzToRtKlcIU1nOub7M
-    PQu+meIOS66vnw==
-    -----END CERTIFICATE-----
-  '';
+  security.pki.certificateFiles = [
+    ./root-ca.crt
+  ];
+
+  environment.etc."k3s-oidc-ca.crt".source = ./root-ca.crt;
 
   services.k3s = {
     enable = true;
