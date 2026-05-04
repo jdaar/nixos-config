@@ -4,17 +4,8 @@
 	# use refind-install instead if mouse support is needed
   boot = {
 		loader = {
-			grub.enable = false;
-			refind = {
-				enable = true;
-				maxGenerations = 1;
-				extraConfig = ''
-					timeout 15
-					default_selection 2
-					enable_mouse
-				'';
-			};
-			efi.canTouchEfiVariables = true;
+			systemd-boot.enable = true;
+			efi.canTouchEfiVariables = false;
 			efi.efiSysMountPoint = "/boot";
 		};
 		kernelPackages = pkgs.linuxPackages_latest;
