@@ -142,7 +142,7 @@ let
                 periodSeconds: 10
               livenessProbe:
                 httpGet:
-                  path: /keycloak/health
+                  path: /keycloak/health/live
                   port: 9000
                 initialDelaySeconds: 30
                 periodSeconds: 10
