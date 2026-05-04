@@ -38,10 +38,7 @@ let
               "webOrigins": [
                 "https://152.53.135.19"
               ],
-              "secret": "headlamp-client-secret",
-              "attributes": {
-                "pkce.code.challenge.method": "S256"
-              }
+              "secret": "headlamp-client-secret"
             }
           ],
           "users": [
@@ -105,7 +102,7 @@ let
           containers:
             - name: keycloak
               image: quay.io/keycloak/keycloak:26.0
-              args: ["start", "--import-realm", "--features=token-exchange"]
+              args: ["start", "--import-realm", "--features=token-exchange", "--spi-realm-import-strategy=OVERWRITE_EXISTING"]
               env:
                 - name: KC_HTTP_RELATIVE_PATH
                   value: /keycloak
