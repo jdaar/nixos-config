@@ -254,7 +254,9 @@ let
         kind: ClusterIssuer
       ipAddresses:
         - 152.53.135.19
-  ''; = pkgs.writeText "cert-manager-ns.yaml" ''
+  '';
+
+  certManagerNsYaml = pkgs.writeText "cert-manager-ns.yaml" ''
     apiVersion: v1
     kind: Namespace
     metadata:
