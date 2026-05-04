@@ -16,14 +16,17 @@
   services.openssh.enable = true;
 	services.onedrive.enable = false;
 
-  networking.firewall.allowedTCPPorts = [ 3389 ];
-  networking.firewall.allowedUDPPorts = [ 3389 ];
+  networking.firewall.allowedTCPPorts = [ ];
+  networking.firewall.allowedUDPPorts = [ ];
   networking.firewall.enable = true;
 
   services.xrdp = {
     enable = true;
     defaultWindowManager = "${pkgs.gnome-session}/bin/gnome-session";
+    openFirewall = true;
   };
+  environment.variables.XDG_CURRENT_DESKTOP = "GNOME";
+  environment.variables.XDG_SESSION_DESKTOP = "GNOME";
   services.libinput.enable = true;
   programs.zsh.enable = true;
 }
