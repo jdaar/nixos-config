@@ -136,13 +136,13 @@ let
                 - containerPort: 9000
               readinessProbe:
                 httpGet:
-                  path: /health/ready
+                  path: /keycloak/health/ready
                   port: 9000
                 initialDelaySeconds: 30
                 periodSeconds: 10
               livenessProbe:
                 httpGet:
-                  path: /health
+                  path: /keycloak/health
                   port: 9000
                 initialDelaySeconds: 30
                 periodSeconds: 10
