@@ -15,6 +15,8 @@
     nixos-wsl.inputs.nixpkgs.follows = "nixpkgs";
     xremap-flake.url = "github:xremap/nix-flake";
     llm-agents.url = "github:numtide/llm-agents.nix";
+    disko.url = "github:nix-community/disko";
+    disko.inputs.nixpkgs.follows = "nixpkgs";
   };
 
   outputs = { nixpkgs, ... }@inputs:
@@ -53,6 +55,7 @@
         specialArgs = { inherit inputs system; };
         modules = [
           ./hosts/server/configuration.nix
+          inputs.disko.nixosModules.disko
           { home-manager.useGlobalPkgs = true; }
         ];
       };
