@@ -287,6 +287,17 @@ let
       selfSigned: {}
   '';
 
+  defaultTlsStoreYaml = pkgs.writeText "default-tls-store.yaml" ''
+    apiVersion: traefik.io/v1alpha1
+    kind: TLSStore
+    metadata:
+      name: default
+      namespace: keycloak
+    spec:
+      defaultCertificate:
+        secretName: keycloak-tls
+  '';
+
   headlampNsYaml = pkgs.writeText "headlamp-ns.yaml" ''
     apiVersion: v1
     kind: Namespace
@@ -400,6 +411,7 @@ in
     "L+ ${manifestDir}/headlamp.yaml - - - - ${headlampYaml}"
     "L+ ${manifestDir}/headlamp-cert.yaml - - - - ${headlampCertYaml}"
     "L+ ${manifestDir}/headlamp-ingress.yaml - - - - ${headlampIngressYaml}"
+    "L+ ${manifestDir}/default-tls-store.yaml - - - - ${defaultTlsStoreYaml}"
   ];
 
   networking.firewall = {
