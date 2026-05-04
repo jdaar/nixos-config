@@ -64,6 +64,7 @@ let
         - backendRefs:
             - name: headlamp
               port: 80
+  '';
 
   gatewayClassYaml = pkgs.writeText "gateway-class.yaml" ''
     kind: GatewayClass
