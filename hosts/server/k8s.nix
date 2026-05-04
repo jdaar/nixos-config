@@ -38,7 +38,8 @@ let
               "webOrigins": [
                 "https://152.53.135.19"
               ],
-              "secret": "headlamp-client-secret"
+              "secret": "headlamp-client-secret",
+              "attributes": {}
             }
           ],
           "users": [
