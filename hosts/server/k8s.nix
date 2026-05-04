@@ -369,7 +369,7 @@ let
           oidc:
             clientID: headlamp
             clientSecret: headlamp-client-secret
-            issuerURL: http://keycloak.keycloak:8080/keycloak/realms/headlamp
+            issuerURL: https://152.53.135.19/keycloak/realms/headlamp
             scopes: openid profile email
         env:
           - name: SSL_CERT_FILE
