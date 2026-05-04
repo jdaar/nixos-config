@@ -1,5 +1,164 @@
 { pkgs, ... }:
 let
+  keycloakNsYaml = pkgs.writeText "keycloak-ns.yaml" ''
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: keycloak
+  '';
+
+  keycloakRealmYaml = pkgs.writeText "keycloak-realm.yaml" ''
+    apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: keycloak-realm
+      namespace: keycloak
+    data:
+      headlamp-realm.json: |
+        {
+          "realm": "headlamp",
+          "enabled": true,
+          "sslRequired": "none",
+          "registrationAllowed": false,
+          "loginWithEmailAllowed": true,
+          "duplicateEmailsAllowed": false,
+          "resetPasswordAllowed": true,
+          "editUsernameAllowed": true,
+          "bruteForceProtected": true,
+          "clients": [
+            {
+              "clientId": "headlamp",
+              "enabled": true,
+              "publicClient": false,
+              "standardFlowEnabled": true,
+              "directAccessGrantsEnabled": true,
+              "redirectUris": [
+                "https://152.53.135.19/oidc-callback"
+              ],
+              "webOrigins": [
+                "https://152.53.135.19"
+              ],
+              "secret": "headlamp-client-secret",
+              "attributes": {
+                "pkce.code.challenge.method": "S256"
+              }
+            }
+          ],
+          "users": [
+            {
+              "username": "admin",
+              "enabled": true,
+              "email": "admin@headlamp.local",
+              "firstName": "Admin",
+              "lastName": "User",
+              "credentials": [
+                {
+                  "type": "password",
+                  "value": "admin",
+                  "temporary": false
+                }
+              ],
+              "realmRoles": ["admin", "default-roles-headlamp"]
+            }
+          ],
+          "roles": {
+            "realm": [
+              {
+                "name": "admin",
+                "description": "Admin role"
+              }
+            ]
+          }
+        }
+  '';
+
+  keycloakDeploymentYaml = pkgs.writeText "keycloak-deployment.yaml" ''
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: keycloak
+      namespace: keycloak
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: keycloak
+      template:
+        metadata:
+          labels:
+            app: keycloak
+        spec:
+          containers:
+            - name: keycloak
+              image: quay.io/keycloak/keycloak:26.0
+              args: ["start-dev", "--import-realm", "--features=token-exchange"]
+              env:
+                - name: KC_HTTP_RELATIVE_PATH
+                  value: /keycloak
+                - name: KC_BOOTSTRAP_ADMIN_USERNAME
+                  value: admin
+                - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+                  value: admin
+                - name: KC_HEALTH_ENABLED
+                  value: "true"
+                - name: KC_HTTP_PORT
+                  value: "8080"
+              ports:
+                - containerPort: 8080
+              readinessProbe:
+                httpGet:
+                  path: /keycloak/health/ready
+                  port: 8080
+                initialDelaySeconds: 30
+                periodSeconds: 10
+              livenessProbe:
+                httpGet:
+                  path: /keycloak/health
+                  port: 8080
+                initialDelaySeconds: 30
+                periodSeconds: 10
+              volumeMounts:
+                - name: realm-import
+                  mountPath: /opt/keycloak/data/import
+          volumes:
+            - name: realm-import
+              configMap:
+                name: keycloak-realm
+  '';
+
+  keycloakServiceYaml = pkgs.writeText "keycloak-service.yaml" ''
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: keycloak
+      namespace: keycloak
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+      selector:
+        app: keycloak
+  '';
+
+  keycloakIngressYaml = pkgs.writeText "keycloak-ingress.yaml" ''
+    apiVersion: traefik.io/v1alpha1
+    kind: IngressRoute
+    metadata:
+      name: keycloak
+      namespace: keycloak
+    spec:
+      entryPoints:
+        - websecure
+      routes:
+        - match: PathPrefix(`/keycloak`)
+          kind: Rule
+          services:
+            - name: keycloak
+              port: 8080
+      tls:
+        secretName: headlamp-tls
+  '';
+
   certManagerNsYaml = pkgs.writeText "cert-manager-ns.yaml" ''
     apiVersion: v1
     kind: Namespace
@@ -71,6 +230,13 @@ let
       chart: headlamp
       repo: https://kubernetes-sigs.github.io/headlamp
       targetNamespace: headlamp
+      valuesContent: |
+        config:
+          oidc:
+            clientID: headlamp
+            clientSecret: headlamp-client-secret
+            issuerURL: https://152.53.135.19/keycloak/realms/headlamp
+            scopes: openid profile email
   '';
 
   headlampCertYaml = pkgs.writeText "headlamp-cert.yaml" ''
@@ -109,55 +275,6 @@ let
         secretName: headlamp-tls
   '';
 
-  cleanupScript = pkgs.writeShellScript "k3s-cleanup" ''
-    export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-
-    until ${pkgs.k3s}/bin/kubectl get nodes 2>/dev/null; do
-      sleep 2
-    done
-
-    staleManifests=(
-      namespace.yaml
-      headlamp-route.yaml
-      contour-gateway-provisioner.yaml
-      gateway-class.yaml
-      gateway.yaml
-      secret.yaml
-    )
-    for m in "''${staleManifests[@]}"; do
-      rm -f ${manifestDir}/$m
-    done
-
-    ${pkgs.k3s}/bin/kubectl delete httproute headlamp -n headlamp --ignore-not-found
-    ${pkgs.k3s}/bin/kubectl delete gateway contour -n projectcontour --ignore-not-found
-    ${pkgs.k3s}/bin/kubectl delete gatewayclass contour --ignore-not-found
-    ${pkgs.k3s}/bin/kubectl delete namespace projectcontour --ignore-not-found
-    ${pkgs.k3s}/bin/kubectl delete secret contour-tls -n projectcontour --ignore-not-found
-    ${pkgs.k3s}/bin/kubectl delete secret headlamp-tls -n headlamp --ignore-not-found
-
-    crds=(
-      backendtlspolicies.gateway.networking.k8s.io
-      contourconfigurations.projectcontour.io
-      contourdeployments.projectcontour.io
-      extensionservices.projectcontour.io
-      gatewayclasses.gateway.networking.k8s.io
-      gateways.gateway.networking.k8s.io
-      grpcroutes.gateway.networking.k8s.io
-      httpproxies.projectcontour.io
-      httproutes.gateway.networking.k8s.io
-      referencegrants.gateway.networking.k8s.io
-      tcproutes.gateway.networking.k8s.io
-      tlscertificatedelegations.projectcontour.io
-      tlsroutes.gateway.networking.k8s.io
-      udproutes.gateway.networking.k8s.io
-      xbackendtrafficpolicies.gateway.networking.x-k8s.io
-      xlistenersets.gateway.networking.x-k8s.io
-    )
-    for crd in "''${crds[@]}"; do
-      ${pkgs.k3s}/bin/kubectl delete crd "$crd" --ignore-not-found
-    done
-  '';
-
   manifestDir = "/var/lib/rancher/k3s/server/manifests";
 in
 {
@@ -166,20 +283,13 @@ in
     role = "server";
   };
 
-  systemd.services.k3s-cleanup = {
-    description = "Clean up stale Contour/Gateway API resources";
-    after = [ "k3s.service" ];
-    wants = [ "k3s.service" ];
-    wantedBy = [ "multi-user.target" ];
-    serviceConfig = {
-      Type = "oneshot";
-      ExecStart = cleanupScript;
-      RemainAfterExit = true;
-    };
-  };
-
   systemd.tmpfiles.rules = [
     "d ${manifestDir} 0755 root root -"
+    "L+ ${manifestDir}/keycloak-ns.yaml - - - - ${keycloakNsYaml}"
+    "L+ ${manifestDir}/keycloak-realm.yaml - - - - ${keycloakRealmYaml}"
+    "L+ ${manifestDir}/keycloak-deployment.yaml - - - - ${keycloakDeploymentYaml}"
+    "L+ ${manifestDir}/keycloak-service.yaml - - - - ${keycloakServiceYaml}"
+    "L+ ${manifestDir}/keycloak-ingress.yaml - - - - ${keycloakIngressYaml}"
     "L+ ${manifestDir}/cert-manager-ns.yaml - - - - ${certManagerNsYaml}"
     "L+ ${manifestDir}/cert-manager.yaml - - - - ${certManagerYaml}"
     "L+ ${manifestDir}/cluster-issuer.yaml - - - - ${clusterIssuerYaml}"
