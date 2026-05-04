@@ -14,36 +14,39 @@
 - Headlamp: https://152.53.135.19/
 
 ## What Works
-- TLS certificates have IP SANs (fixed original "no IP SANs" error)
-- CA-signed certs (fixed "unknown authority" error)
-- CA cert mounted in Headlamp pod at /etc/ssl/certs/ca.crt via -oidc-ca-file
+- TLS certificates have IP SANs
+- CA-signed certs
+- CA cert mounted in Headlamp pod
 - OIDC discovery endpoint accessible from Headlamp pod
-- Keycloak token endpoint works: password grant returns valid tokens with correct issuer
+- Keycloak token endpoint works
 - Keycloak login page renders correctly
-- PKCE enforcement removed from Keycloak client attributes
+- PKCE S256 enabled on Keycloak client (matched with Headlamp)
+- OIDC auth code flow completes successfully (callback sets auth cookie)
+- Keycloak issues valid ID tokens and refresh tokens
 
-## Current Problem
-After authenticating with Keycloak, Headlamp redirects back to `/auth?cluster=main` but the user is not actually authenticated. The browser appears logged in but Headlamp doesn't grant access.
+## Root Cause (RESOLVED 2026-05-04)
+The K8s API server (k3s) had **no OIDC authentication configured**. Headlamp successfully authenticated users via Keycloak and set the auth cookie, but when proxying API requests with the OIDC token as Bearer token, the K8s API server rejected them with 401 because it couldn't validate OIDC tokens.
 
-Keycloak logs show when a user DOES log in:
-```
-REFRESH_TOKEN_ERROR ... "Session doesn't have required client"
-```
+Fix: Added `--kube-apiserver-arg=--oidc-*` flags to k3s server config so the API server validates tokens against the Keycloak issuer.
 
-This means: the initial authorization code exchange fails silently, and Headlamp falls back to refreshing a broken/stale token every 5 seconds.
+## Realm Rename (PENDING DEPLOY)
+Realm renamed from `headlamp` to `k8s-sso` to reflect multi-purpose SSO intent. Changes are in `k8s.nix` but not yet deployed. After deploy, the old `headlamp` realm in Keycloak should be manually deleted.
 
-## Root Cause Analysis (UNRESOLVED)
-The most likely cause: the Keycloak `headlamp` client was **deleted and recreated** (via `kubectl exec` admin API) to remove the `pkce.code.challenge.method` attribute. This changed the client's internal UUID. Any sessions/tokens created BEFORE the recreation reference the OLD client UUID, causing "Session doesn't have required client".
+## Config files changed
+- `/etc/nixos/hosts/server/k8s.nix`:
+  - Realm JSON: `"realm": "k8s-sso"`, `"default-roles-k8s-sso"`
+  - PKCE attribute added to client: `"pkce.code.challenge.method": "S256"`
+  - Headlamp issuerURL: `https://152.53.135.19/keycloak/realms/k8s-sso`
+  - k3s extraFlags with OIDC apiserver args
+  - CA cert in `environment.etc."k3s-oidc-ca.crt"`
+  - ConfigMap key renamed: `k8s-sso-realm.json`
 
-However, even new login attempts from incognito appear to fail. The Headlamp logs only show stale "refreshing token: key not found" errors and no new auth flow logs. This means either:
-1. The browser auth flow completes but the callback to Headlamp fails silently
-2. Headlamp's OIDC callback handler has a bug or misconfiguration
-3. The Headlamp OIDC state/nonce doesn't match what Keycloak returns
-
-## Key Files
-- `/etc/nixos/hosts/server/k8s.nix` - All k8s manifests (Keycloak, Headlamp, cert-manager, etc.)
-- Keycloak realm config is imported from the ConfigMap `keycloak-realm` in `keycloak` namespace
-- `--spi-realm-import-strategy=OVERWRITE_EXISTING` is set on Keycloak
+## k3s OIDC Configuration (PENDING DEPLOY)
+- `--oidc-issuer-url=https://152.53.135.19/keycloak/realms/k8s-sso`
+- `--oidc-client-id=headlamp`
+- `--oidc-ca-file=/etc/k3s-oidc-ca.crt`
+- `--oidc-username-claim=preferred_username`
+- `--oidc-groups-claim=realm_access.roles`
 
 ## Keycloak Client Current State (via admin API)
 - clientId: headlamp
@@ -53,40 +56,36 @@ However, even new login attempts from incognito appear to fail. The Headlamp log
 - standardFlowEnabled: true
 - directAccessGrantsEnabled: true
 - publicClient: false
-- pkce.code.challenge.method: REMOVED (was S256, deleted via admin API)
+- pkce.code.challenge.method: S256
 
-## Headlamp OIDC Config (running)
-- issuerURL: https://152.53.135.19/keycloak/realms/headlamp
+## Headlamp OIDC Config (will update on deploy)
+- issuerURL: https://152.53.135.19/keycloak/realms/k8s-sso
 - callbackURL: https://152.53.135.19/oidc-callback
 - clientID: headlamp
 - clientSecret: headlamp-client-secret
 - scopes: openid profile email
 - usePKCE: true
-- oidc-ca-file: /etc/ssl/certs/ca.crt (mounted from headlamp-tls secret)
+- oidc-ca-file: /etc/ssl/certs/ca.crt
+
+## Deploy Instructions
+```bash
+git push  # push changes
+ssh server 'cd /etc/nixos && git pull && sudo nixos-rebuild switch --flake .#server'
+```
+After deploy, delete the old `headlamp` realm from Keycloak via admin API.
 
 ## Debugging Commands
 ```bash
-# Check Headlamp logs (filter out noise)
+# Check Headlamp logs
 k3s kubectl logs -n headlamp -l app.kubernetes.io/name=headlamp --tail=100 | grep -v "refreshing token\|Request completed"
 
 # Check Keycloak auth errors
 k3s kubectl logs -n keycloak -l app=keycloak --tail=50 | grep -iE "error|warn|invalid|login"
 
-# Clear all Keycloak sessions
-TOKEN=$(curl -sk -X POST "https://152.53.135.19/keycloak/realms/master/protocol/openid-connect/token" -d "username=admin&password=admin&grant_type=password&client_id=admin-cli" | grep -o '"access_token":"[^"]*"' | cut -d'"' -f4)
-curl -sk -X POST -H "Authorization: Bearer $TOKEN" "https://152.53.135.19/keycloak/admin/realms/headlamp/logout-all"
-
-# Restart Headlamp
-k3s kubectl rollout restart deployment headlamp -n headlamp
-
 # Test token exchange from Headlamp pod
 POD=$(k3s kubectl get pods -n headlamp -l app.kubernetes.io/name=headlamp -o jsonpath="{.items[0].metadata.name}")
-k3s kubectl exec -n headlamp $POD -- wget -q -O- --no-check-certificate "https://152.53.135.19/keycloak/realms/headlamp/protocol/openid-connect/token" --post-data="grant_type=password&client_id=headlamp&client_secret=headlamp-client-secret&username=admin&password=admin&scope=openid"
-```
+k3s kubectl exec -n headlamp $POD -- wget -q -O- --no-check-certificate "https://152.53.135.19/keycloak/realms/k8s-sso/protocol/openid-connect/token" --post-data="grant_type=password&client_id=headlamp&client_secret=headlamp-client-secret&username=admin&password=admin&scope=openid"
 
-## Next Steps To Investigate
-1. Watch Headlamp logs IN REAL TIME during a fresh login attempt from incognito - look for auth callback handling, token exchange errors
-2. Check if Headlamp's OIDC callback URL matches what Keycloak redirects to
-3. Consider the `directAccessGrantsEnabled` setting - may need to be disabled if it interferes
-4. Check if the `usePKCE: true` in Headlamp is actually sending the code_challenge in the authorization request (inspect browser network tab)
-5. Possible that Headlamp's internal session store doesn't persist the auth code state between redirect
+# Full OIDC flow test (from server)
+bash /tmp/e2e_test.sh
+```

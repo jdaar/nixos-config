@@ -14,9 +14,9 @@ let
       name: keycloak-realm
       namespace: keycloak
     data:
-      headlamp-realm.json: |
+      k8s-sso-realm.json: |
         {
-          "realm": "headlamp",
+          "realm": "k8s-sso",
           "enabled": true,
           "sslRequired": "none",
           "registrationAllowed": false,
@@ -39,14 +39,16 @@ let
                 "https://152.53.135.19"
               ],
               "secret": "headlamp-client-secret",
-              "attributes": {}
+              "attributes": {
+                "pkce.code.challenge.method": "S256"
+              }
             }
           ],
           "users": [
             {
               "username": "admin",
               "enabled": true,
-              "email": "admin@headlamp.local",
+              "email": "admin@k8s-sso.local",
               "firstName": "Admin",
               "lastName": "User",
               "credentials": [
@@ -56,7 +58,7 @@ let
                   "temporary": false
                 }
               ],
-              "realmRoles": ["admin", "default-roles-headlamp"]
+              "realmRoles": ["admin", "default-roles-k8s-sso"]
             }
           ],
           "roles": {
@@ -367,7 +369,7 @@ let
           oidc:
             clientID: headlamp
             clientSecret: headlamp-client-secret
-            issuerURL: https://152.53.135.19/keycloak/realms/headlamp
+            issuerURL: https://152.53.135.19/keycloak/realms/k8s-sso
             scopes: openid profile email
             usePKCE: true
             callbackURL: https://152.53.135.19/oidc-callback
@@ -426,9 +428,38 @@ let
   manifestDir = "/var/lib/rancher/k3s/server/manifests";
 in
 {
+  environment.etc."k3s-oidc-ca.crt".text = ''
+    -----BEGIN CERTIFICATE-----
+    MIIDBjCCAe6gAwIBAgIUEaDHHL07yl7d0urcLJ01TM3yWWkwDQYJKoZIhvcNAQEL
+    BQAwGzEZMBcGA1UEAxMQaGVhZGxhbXAtcm9vdC1jYTAeFw0yNjA1MDQxOTUzMjZa
+    Fw0zNjA1MDExOTUzMjZaMBsxGTAXBgNVBAMTEGhlYWRsYW1wLXJvb3QtY2EwggEi
+    MA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLLLbktDycE3iYrpd75nLWUmlo
+    rYS5UKrx0PiOlqvpjsFGd8TOuUX3fdasl/igS1xBUlu5VcSByXIm+ODPxsW8KkO3
+    0A3uwWYnnegZ5hd6Sk++08mqF5i5CibC2WSEBpOh+MZjl9jxfBynA9jJ1hwvMrXi
+    hyNJeWjMvTPe6t9t3myIZ7wtPRt23Z4KqLj1ON4R5F/f1wQwayauV+Hjx8Th6d8e
+    EyACVCo11t4xg/Hr3HOO4iypLPLSCWPTatRQmrkjEAkT77asBNjKzqk/XlaFPc+C
+    r+c6e6uSxOyNtcGSRncdAYYVSfkq6UODGbI+bnQktiSf2ov2lqZtE+kdT4grAgMB
+    AAGjQjBAMA4GA1UdDwEB/wQEAwICpDAPBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQW
+    BBQ7FHyElfmNq+BEThexH1tokViJKTANBgkqhkiG9w0BAQsFAAOCAQEAcUJufGHX
+    9xDHHT3pkUXp2trvu/LhwwCRHr52qm/TdjYx8OyES/+ZwFCeViK8kHDVO0oY7H5p
+    2s0x0j5816xbZD65Telh6vFPYrqJHBFBhnif6csxrVS+IdX/aa5GWVLLHffn0uZc
+    jr7/5iJUdfeI3UE+zeBwI/ebNdAcCJGpElRm05seJKCiJtFgpMh9Yv4D2qI4n0S2
+    Uo7Sg3jaHS6KChiqlu+P3LXmm5FlU1PVmsUk6UnCXYSkHkyJ8y/z5oBRIJnjJzWX
+    ho9Zolf5Rf60dtowMFjx3QTcjQMy297QY4yTUo21aa2XvYQsexIrrgt2CNMr3Eow
+    8YextglEtWw9kA==
+    -----END CERTIFICATE-----
+  '';
+
   services.k3s = {
     enable = true;
     role = "server";
+    extraFlags = toString [
+      "--kube-apiserver-arg=--oidc-issuer-url=https://152.53.135.19/keycloak/realms/k8s-sso"
+      "--kube-apiserver-arg=--oidc-client-id=headlamp"
+      "--kube-apiserver-arg=--oidc-ca-file=/etc/k3s-oidc-ca.crt"
+      "--kube-apiserver-arg=--oidc-username-claim=preferred_username"
+      "--kube-apiserver-arg=--oidc-groups-claim=realm_access.roles"
+    ];
   };
 
   systemd.tmpfiles.rules = [
