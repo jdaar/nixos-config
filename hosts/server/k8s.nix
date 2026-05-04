@@ -23,6 +23,13 @@ let
             enabled: true
   '';
 
+  headlampNsYaml = pkgs.writeText "headlamp-ns.yaml" ''
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: headlamp
+  '';
+
   headlampYaml = pkgs.writeText "headlamp.yaml" ''
     apiVersion: helm.cattle.io/v1
     kind: HelmChart
@@ -32,7 +39,7 @@ let
     spec:
       chart: headlamp
       repo: https://kubernetes.github.io/headlamp
-      targetNamespace: projectcontour
+      targetNamespace: headlamp
       valuesContent: |
         service:
           type: NodePort
@@ -52,6 +59,7 @@ in
     "d ${manifestDir} 0755 root root -"
     "L+ ${manifestDir}/namespace.yaml - - - - ${namespaceYaml}"
     "L+ ${manifestDir}/contour.yaml - - - - ${contourYaml}"
+    "L+ ${manifestDir}/headlamp-ns.yaml - - - - ${headlampNsYaml}"
     "L+ ${manifestDir}/headlamp.yaml - - - - ${headlampYaml}"
   ];
 
