@@ -1,0 +1,13 @@
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: contour
+  namespace: kube-system
+spec:
+  chart: contour
+  repo: https://charts.bitnami.com/bitnami
+  targetNamespace: projectcontour
+  valuesContent: |-
+    contour:
+      ingressController:
+        enabled: true
