@@ -304,6 +304,39 @@ let
           enabled: true
   '';
 
+  trustManagerYaml = pkgs.writeText "trust-manager.yaml" ''
+    apiVersion: helm.cattle.io/v1
+    kind: HelmChart
+    metadata:
+      name: trust-manager
+      namespace: kube-system
+    spec:
+      chart: trust-manager
+      repo: https://charts.jetstack.io
+      targetNamespace: cert-manager
+      valuesContent: |
+        trust:
+          namespace: cert-manager
+  '';
+
+  caBundleYaml = pkgs.writeText "ca-bundle.yaml" ''
+    apiVersion: trust.cert-manager.io/v1alpha1
+    kind: Bundle
+    metadata:
+      name: oidc-ca-bundle
+    spec:
+      sources:
+        - secret:
+            name: root-ca-tls
+            key: ca.crt
+      target:
+        configMap:
+          key: ca.crt
+        namespaceSelector:
+          matchLabels:
+            trust-manager-bundle: oidc-ca
+  '';
+
   clusterIssuerYaml = pkgs.writeText "cluster-issuer.yaml" ''
     apiVersion: cert-manager.io/v1
     kind: ClusterIssuer
@@ -354,6 +387,20 @@ let
         namespace: kube-system
   '';
 
+  oidcAdminCrbYaml = pkgs.writeText "oidc-admin-crb.yaml" ''
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: oidc-admin-cluster-admin
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: cluster-admin
+    subjects:
+      - kind: User
+        name: admin
+  '';
+
   headlampYaml = pkgs.writeText "headlamp.yaml" ''
     apiVersion: helm.cattle.io/v1
     kind: HelmChart
@@ -382,8 +429,8 @@ let
             readOnly: true
         volumes:
           - name: ca-cert
-            secret:
-              secretName: headlamp-tls
+            configMap:
+              name: oidc-ca-bundle
               items:
                 - key: ca.crt
                   path: ca.crt
@@ -425,29 +472,83 @@ let
         secretName: headlamp-tls
   '';
 
+  headlampNsLabelYaml = pkgs.writeText "headlamp-ns-label.yaml" ''
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: headlamp
+      labels:
+        trust-manager-bundle: oidc-ca
+  '';
+
+  certManagerNsLabelYaml = pkgs.writeText "cert-manager-ns-label.yaml" ''
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: cert-manager
+      labels:
+        trust-manager-bundle: oidc-ca
+  '';
+
   manifestDir = "/var/lib/rancher/k3s/server/manifests";
+  oidcCaFile = "/var/lib/k3s/oidc-ca.crt";
+
+  syncOidcCaScript = pkgs.writeShellScript "sync-oidc-ca" ''
+    ${pkgs.k3s}/bin/kubectl --kubeconfig=/etc/rancher/k3s/k3s.yaml \
+      get configmap oidc-ca-bundle -n cert-manager \
+      -o jsonpath='{.data.ca\.crt}' 2>/dev/null > "${oidcCaFile}.tmp"
+    if [ $? -ne 0 ] || [ ! -s "${oidcCaFile}.tmp" ]; then
+      rm -f "${oidcCaFile}.tmp"
+      echo "Failed to extract CA from trust-manager bundle" >&2
+      exit 1
+    fi
+    if [ ! -f "${oidcCaFile}" ] || ! cmp -s "${oidcCaFile}" "${oidcCaFile}.tmp"; then
+      mv "${oidcCaFile}.tmp" "${oidcCaFile}"
+      echo "OIDC CA certificate updated, restarting k3s"
+      systemctl restart k3s
+    else
+      rm -f "${oidcCaFile}.tmp"
+      echo "OIDC CA certificate unchanged"
+    fi
+  '';
 in
 {
-  security.pki.certificateFiles = [
-    ./root-ca.crt
-  ];
-
-  environment.etc."k3s-oidc-ca.crt".source = ./root-ca.crt;
-
   services.k3s = {
     enable = true;
     role = "server";
     extraFlags = toString [
       "--kube-apiserver-arg=--oidc-issuer-url=https://152.53.135.19/keycloak/realms/k8s-sso"
       "--kube-apiserver-arg=--oidc-client-id=headlamp"
-      "--kube-apiserver-arg=--oidc-ca-file=/etc/k3s-oidc-ca.crt"
+      "--kube-apiserver-arg=--oidc-ca-file=${oidcCaFile}"
       "--kube-apiserver-arg=--oidc-username-claim=preferred_username"
       "--kube-apiserver-arg=--oidc-groups-claim=realm_access.roles"
     ];
-    };
+  };
 
   systemd.services.k3s.environment = {
     SSL_CERT_FILE = "/etc/ssl/certs/ca-certificates.crt";
+  };
+
+  systemd.services.sync-oidc-ca = {
+    description = "Sync OIDC CA certificate from trust-manager bundle to host filesystem";
+    after = [ "k3s.service" ];
+    requires = [ "k3s.service" ];
+    path = [ pkgs.k3s pkgs.coreutils ];
+    serviceConfig = {
+      Type = "oneshot";
+      ExecStart = syncOidcCaScript;
+      RemainAfterExit = true;
+    };
+  };
+
+  systemd.timers.sync-oidc-ca = {
+    description = "Periodically sync OIDC CA certificate from trust-manager";
+    wantedBy = [ "timers.target" ];
+    timerConfig = {
+      OnBootSec = "2min";
+      OnUnitActiveSec = "5min";
+      Unit = "sync-oidc-ca.service";
+    };
   };
 
   systemd.tmpfiles.rules = [
@@ -463,12 +564,17 @@ in
     "L+ ${manifestDir}/keycloak-cert.yaml - - - - ${keycloakCertYaml}"
     "L+ ${manifestDir}/cert-manager-ns.yaml - - - - ${certManagerNsYaml}"
     "L+ ${manifestDir}/cert-manager.yaml - - - - ${certManagerYaml}"
+    "L+ ${manifestDir}/trust-manager.yaml - - - - ${trustManagerYaml}"
     "L+ ${manifestDir}/cluster-issuer.yaml - - - - ${clusterIssuerYaml}"
     "L+ ${manifestDir}/root-ca-cert.yaml - - - - ${rootCaCertYaml}"
     "L+ ${manifestDir}/ca-issuer.yaml - - - - ${caIssuerYaml}"
+    "L+ ${manifestDir}/ca-bundle.yaml - - - - ${caBundleYaml}"
+    "L+ ${manifestDir}/cert-manager-ns-label.yaml - - - - ${certManagerNsLabelYaml}"
+    "L+ ${manifestDir}/headlamp-ns-label.yaml - - - - ${headlampNsLabelYaml}"
     "L+ ${manifestDir}/headlamp-ns.yaml - - - - ${headlampNsYaml}"
     "L+ ${manifestDir}/headlamp-admin.yaml - - - - ${headlampAdminYaml}"
     "L+ ${manifestDir}/headlamp-admin-crb.yaml - - - - ${headlampAdminCrbYaml}"
+    "L+ ${manifestDir}/oidc-admin-crb.yaml - - - - ${oidcAdminCrbYaml}"
     "L+ ${manifestDir}/headlamp.yaml - - - - ${headlampYaml}"
     "L+ ${manifestDir}/headlamp-cert.yaml - - - - ${headlampCertYaml}"
     "L+ ${manifestDir}/headlamp-ingress.yaml - - - - ${headlampIngressYaml}"
