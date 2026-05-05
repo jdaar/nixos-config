@@ -315,8 +315,8 @@ let
       repo: https://charts.jetstack.io
       targetNamespace: cert-manager
       valuesContent: |
-        trust:
-          namespace: cert-manager
+        crds:
+          enabled: true
   '';
 
   caBundleYaml = pkgs.writeText "ca-bundle.yaml" ''
